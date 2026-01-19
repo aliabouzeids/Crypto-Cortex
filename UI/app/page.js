@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import EthCandleChart from "../components/candles";
 import TradingControls from "../components/trading_control";
 import {buy,sell} from "./interaction"
+import {fetch_charts_prices}from "../../AI_decision/data_feed.js"
 
 export default function Home() {
   const [account, setAccount] = useState(null);
@@ -32,8 +33,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchOHLC() {
       try {
-        const res = await fetch("https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1h&limit=50");
-        const data = await res.json();
+        const data = await fetch_charts_prices();
 
         const formatted = data.map((candle) => ({
           time: new Date(candle[0]),

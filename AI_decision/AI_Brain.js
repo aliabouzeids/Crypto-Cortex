@@ -14,7 +14,7 @@ const AgentSchema = z.object({
 
 // === Parameters ===
 const threshold = 0;
-const TOLERANCE = 100;
+const TOLERANCE = 0;
 
 // === Nodes ===
 function entry(state) {
