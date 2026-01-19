@@ -1,38 +1,36 @@
+import { z } from "zod";
 import { StateGraph, END } from "@langchain/langgraph";
 
-// === Agent type ===
-/**
- * @typedef {Object} CryptoAgent
- * @property {number} wallet_balance
- * @property {number[]} prices
- * @property {number} price_when_bought
- * @property {string} market_previous_state
- * @property {boolean} hold_position
- * @property {string} signal
- * @property {string} final_decision
- */
+const AgentSchema = z.object({
+  wallet_balance: z.number(),
+  prices: z.array(z.number()),
+  price_when_bought: z.number(),
+  market_previous_state: z.string(),
+  hold_position: z.boolean(),
+  signal: z.string(),
+  final_decision: z.string(),
+});
 
 const threshold = 3;
 const TOLERANCE = 0;
 
-// === Nodes ===
-function entry(agent) {
-  return agent;
+function entry(state) {
+  return state;
 }
 
-function checkWalletBalance(agent) {
-  if (agent.wallet_balance < threshold) return "not_enough_balance";
+function checkWalletBalance(state) {
+  if (state.wallet_balance < threshold) return "not_enough_balance";
   return "continue";
 }
 
-function decideGoal(agent) {
-  if (agent.hold_position) {
-    const lastPrice = agent.prices[agent.prices.length - 1];
-    if (lastPrice > agent.price_when_bought + TOLERANCE) {
+function decideGoal(state) {
+  if (state.hold_position) {
+    const lastPrice = state.prices[state.prices.length - 1];
+    if (lastPrice > state.price_when_bought + TOLERANCE) {
       return "sell";
-    } else if (Math.abs(lastPrice - agent.price_when_bought) <= TOLERANCE) {
+    } else if (Math.abs(lastPrice - state.price_when_bought) <= TOLERANCE) {
       return "hold";
-    } else if (agent.price_when_bought > lastPrice + TOLERANCE) {
+    } else if (state.price_when_bought > lastPrice + TOLERANCE) {
       return "sell";
     }
   } else {
@@ -40,26 +38,22 @@ function decideGoal(agent) {
   }
 }
 
-function buy(agent) {
-  agent.final_decision = "buy";
-  return agent;
+function buy(state) {
+  return { ...state, final_decision: "buy" };
 }
 
-function sell(agent) {
-  agent.final_decision = "sell";
-  return agent;
+function sell(state) {
+  return { ...state, final_decision: "sell" };
 }
 
-function hold(agent) {
-  agent.final_decision = "hold";
-  return agent;
+function hold(state) {
+  return { ...state, final_decision: "hold" };
 }
 
-// === Build the graph ===
-const graph = new StateGraph();
+const graph = new StateGraph(AgentSchema);
 
 graph.addNode("Entry", entry);
-graph.addNode("goal", (agent) => agent);
+graph.addNode("goal", (state) => state);
 graph.addNode("buy", buy);
 graph.addNode("sell", sell);
 graph.addNode("hold", hold);
@@ -83,7 +77,6 @@ graph.addConditionalEdges("goal", decideGoal, {
 
 const finalAI = graph.compile();
 
-// === Example run ===
 const params = {
   wallet_balance: 5,
   prices: [100, 101],
@@ -94,5 +87,5 @@ const params = {
   final_decision: "",
 };
 
-const result = finalAI.invoke(params);
+const result = await finalAI.invoke(params);
 console.log(result.final_decision); // should print "hold"
