@@ -6,9 +6,8 @@ const AgentSchema = z.object({
   wallet_balance: z.number(),
   prices: z.array(z.number()),
   price_when_bought: z.number(),
-  market_previous_state: z.string(),
+  market_state: z.string(),
   hold_position: z.boolean(),
-  signal: z.string(),
   final_decision: z.string(),
 });
 
@@ -22,8 +21,14 @@ function entry(state) {
 }
 
 function checkWalletBalance(state) {
-  if (state.agent.wallet_balance < threshold) return "not_enough_balance";
-  return "continue";
+  if(state.agent.hold_position){
+    return "continue";
+  }
+  else
+  {
+    if (state.agent.wallet_balance < threshold) return "not_enough_balance";
+    return "continue";
+  }
 }
 
 function decideGoal(state) {
@@ -53,7 +58,9 @@ function sell(state) {
 function hold(state) {
   return { agent: { ...state.agent, final_decision: "hold" } };
 }
-
+function not_enough_balance(state){
+  return {agent:{...state.agent,final_decision:"not_enough_balance"}}
+}
 // === Build graph ===
 const graph = new StateGraph({
   channels: {
@@ -66,15 +73,17 @@ graph.addNode("goal", (state) => state);
 graph.addNode("buy", buy);
 graph.addNode("sell", sell);
 graph.addNode("hold", hold);
+graph.addNode("not_enough_balance", not_enough_balance);
 
 graph.setEntryPoint("Entry");
 
 graph.addEdge("buy", END);
 graph.addEdge("sell", END);
 graph.addEdge("hold", END);
+graph.addEdge("not_enough_balance", END);
 
 graph.addConditionalEdges("Entry", checkWalletBalance, {
-  not_enough_balance: END,
+  not_enough_balance: "not_enough_balance",
   continue: "goal",
 });
 

@@ -10,14 +10,21 @@ export default function Home() {
   const [ohlc, setOhlc] = useState([]);
   const [latestPrice, setLatestPrice] = useState(null);
 
-  async function connectWallet() {
-    if (window.ethereum) {
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-      setAccount(accounts[0]);
-    } else {
-      alert("MetaMask not found");
-    }
+ async function connectWallet() {
+  if (window.ethereum) {
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    setAccount(accounts[0]);
+
+    // NEW: send account to backend API
+    await fetch("/api/setAccount", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ account: accounts[0] }),
+    });
+  } else {
+    alert("MetaMask not found");
   }
+}
 
   async function buy_eth() {
     buy(0)
