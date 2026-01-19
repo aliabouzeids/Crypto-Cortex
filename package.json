@@ -10,9 +10,8 @@
     "start": "next start ./UI"
   },
   "dependencies": {
-    "@langchain/langgraph": "^latest",
-    "zod": "^latest",
     "@langchain/core": "^1.1.12",
+    "@langchain/langgraph": "^0.0.20",
     "abitype": "^1.2.3",
     "axios": "^1.13.2",
     "chart.js": "^4.5.1",
@@ -24,12 +23,14 @@
     "langchain": "^1.2.7",
     "mongoose": "^9.1.2",
     "next": "^16.1.1",
+    "node-fetch": "^3.3.2",
     "ox": "^0.11.1",
     "react": "^19.2.3",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.3",
     "viem": "^2.44.1",
-    "ws": "^8.18.3"
+    "ws": "^8.18.3",
+    "zod": "^4.2.1"
   },
   "keywords": [],
   "author": "",
