@@ -3,9 +3,10 @@
 
 
 //buying logic
-async function buy(amount){}
+export function buy(amount){}
 
 
 
 //selling logic
-async function sell(amount){}
+export function sell(amount){}
+
