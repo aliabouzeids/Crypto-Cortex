@@ -42,11 +42,11 @@ function decideGoal(state) {
     } else if (agent.price_when_bought > lastPrice + TOLERANCE) {
       return "sell";
     }
+    return "hold";
   } else {
     return "buy";
   }
 }
-
 function buy(state) {
   return { agent: { ...state.agent, final_decision: "buy" } };
 }

@@ -16,7 +16,7 @@ export default function Home() {
     setAccount(accounts[0]);
 
     // NEW: send account to backend API
-    await fetch("/api/setAccount", {
+    await fetch("/api/set_account", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ account: accounts[0] }),
@@ -74,7 +74,7 @@ export default function Home() {
   }}>
 
 
-      <h1> Super AI Crypto Trading Agent (no idea about the name!)</h1>
+      <h1> Crypto Cortex</h1>
 
       {!account ? (
         <button onClick={connectWallet}>Connect Wallet</button>
