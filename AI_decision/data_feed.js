@@ -74,7 +74,7 @@ export async function calculate_market_state(
 
 const client = createPublicClient({
   chain: mainnet,
-  transport: http("https://mainnet.infura.io/v3/cf1b77a759114db3a815944536bc117b"),
+  transport: http("https://mainnet.infura.io/v3/ur-infura-node-here"),
 });
 
 export async function get_wallet_balance() {
