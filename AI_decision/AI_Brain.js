@@ -1,111 +1,104 @@
 import { z } from "zod";
 import { StateGraph, END } from "@langchain/langgraph";
-
 // === Define schema ===
 const AgentSchema = z.object({
-  wallet_balance: z.number(),
-  prices: z.array(z.number()),
-  price_when_bought: z.number(),
-  market_state: z.string(),
-  hold_position: z.boolean(),
-  final_decision: z.string(),
+    wallet_balance: z.number(),
+    prices: z.array(z.number()),
+    price_when_bought: z.number(),
+    market_state: z.string(),
+    hold_position: z.boolean(),
+    final_decision: z.string(),
 });
-
 // === Parameters ===
 const threshold = 0;
 const TOLERANCE = 0;
-
 // === Nodes ===
 function entry(state) {
-  return state;
+    return state;
 }
-
 function checkWalletBalance(state) {
-  if(state.agent.hold_position){
-    return "continue";
-  }
-  else
-  {
-    if (state.agent.wallet_balance < threshold) return "not_enough_balance";
-    return "continue";
-  }
-}
-
-function decideGoal(state) {
-  const agent = state.agent;
-  if (agent.hold_position) {
-    const lastPrice = agent.prices[agent.prices.length - 1];
-    if (lastPrice > agent.price_when_bought + TOLERANCE) {
-      return "sell";
-    } else if (Math.abs(lastPrice - agent.price_when_bought) <= TOLERANCE) {
-      return "hold";
-    } else if (agent.price_when_bought > lastPrice + TOLERANCE) {
-      return "sell";
+    if (state.agent.hold_position) {
+        return "continue";
     }
-    return "hold";
-  } else {
-    return "buy";
-  }
+    else {
+        if (state.agent.wallet_balance < threshold)
+            return "not_enough_balance";
+        return "continue";
+    }
+}
+function decideGoal(state) {
+    const agent = state.agent;
+    if (agent.hold_position) {
+        const lastPrice = agent.prices[agent.prices.length - 1];
+        if (lastPrice == undefined)
+            return "hold";
+        if (lastPrice > agent.price_when_bought + TOLERANCE) {
+            return "sell";
+        }
+        else if (Math.abs(lastPrice - agent.price_when_bought) <= TOLERANCE) {
+            return "hold";
+        }
+        else if (agent.price_when_bought > lastPrice + TOLERANCE) {
+            return "sell";
+        }
+        return "hold";
+    }
+    else {
+        return "buy";
+    }
 }
 function buy(state) {
-  return { agent: { ...state.agent, final_decision: "buy" } };
+    return { agent: { ...state.agent, final_decision: "buy" } };
 }
-
 function sell(state) {
-  return { agent: { ...state.agent, final_decision: "sell" } };
+    return { agent: { ...state.agent, final_decision: "sell" } };
 }
-
 function hold(state) {
-  return { agent: { ...state.agent, final_decision: "hold" } };
+    return { agent: { ...state.agent, final_decision: "hold" } };
 }
-function not_enough_balance(state){
-  return {agent:{...state.agent,final_decision:"not_enough_balance"}}
+function not_enough_balance(state) {
+    return { agent: { ...state.agent, final_decision: "not_enough_balance" } };
 }
 // === Build graph ===
 const graph = new StateGraph({
-  channels: {
-    agent: AgentSchema,
-  },
+    channels: {
+        agent: AgentSchema,
+    },
 });
-
 graph.addNode("Entry", entry);
 graph.addNode("goal", (state) => state);
 graph.addNode("buy", buy);
 graph.addNode("sell", sell);
 graph.addNode("hold", hold);
 graph.addNode("not_enough_balance", not_enough_balance);
-
 graph.setEntryPoint("Entry");
-
 graph.addEdge("buy", END);
 graph.addEdge("sell", END);
 graph.addEdge("hold", END);
 graph.addEdge("not_enough_balance", END);
-
 graph.addConditionalEdges("Entry", checkWalletBalance, {
-  not_enough_balance: "not_enough_balance",
-  continue: "goal",
+    not_enough_balance: "not_enough_balance",
+    continue: "goal",
 });
-
 graph.addConditionalEdges("goal", decideGoal, {
-  buy: "buy",
-  sell: "sell",
-  hold: "hold",
+    buy: "buy",
+    sell: "sell",
+    hold: "hold",
 });
-
 // === Export compiled graph ===
 const finalAI = graph.compile();
 export default finalAI;
-
-// const params = {
-//   wallet_balance: 5,
-//   prices: [100, 101],
-//   price_when_bought: 101,
-//   market_previous_state: "bullish",
-//   hold_position: true,
-//   signal: "",
-//   final_decision: "",
+// Example usage:
+// const params: State = {
+//   agent: {
+//     wallet_balance: 5,
+//     prices: [100, 101],
+//     price_when_bought: 101,
+//     market_state: "bullish",
+//     hold_position: true,
+//     final_decision: "",
+//   },
 // };
-
 // const result = await finalAI.invoke(params);
-// console.log(result.final_decision); // should print "hold"
+// console.log(result.agent.final_decision); // "hold"
+//# sourceMappingURL=AI_Brain.js.map
