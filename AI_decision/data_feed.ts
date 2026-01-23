@@ -107,7 +107,7 @@ export async function calculate_market_state(
 const client = createPublicClient({
   chain: mainnet,
   transport: http(
-    "https://mainnet.infura.io/v3/cf1b77a759114db3a815944536bc117b"
+    "https://virtual.mainnet.eu.rpc.tenderly.co/a6971ff8-2695-40e1-804b-e5fcf5478f8a"
   ),
 });
 

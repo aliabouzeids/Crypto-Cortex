@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import EthCandleChart from "../components/candles";
 import TradingControls from "../components/trading_control";
-import {buy,sell} from "./interaction"
 import {fetch_charts_prices}from "../../AI_decision/data_feed.js"
 
 export default function Home() {
@@ -27,12 +26,10 @@ export default function Home() {
 }
 
   async function buy_eth() {
-    buy(0)
     alert("Buying ETH… (logic to be added)");
   }
 
   async function sell_eth() {
-    sell(0)
     alert("Selling ETH… (logic to be added)");
   }
 
