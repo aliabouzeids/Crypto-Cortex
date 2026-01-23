@@ -1,82 +1,82 @@
 "use client";
-import { Bar } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  TimeScale,
-  Tooltip,
-  Legend,
-  BarElement,
-} from "chart.js";
-import 'chartjs-adapter-date-fns';
+import dynamic from "next/dynamic";
+import { useMemo } from "react";
 
-ChartJS.register(CategoryScale, LinearScale, TimeScale, Tooltip, Legend, BarElement);
+const ReactApexChart = dynamic(() => import("react-apexcharts"), {
+  ssr: false,
+});
 
 export default function EthCandleChart({ ohlc }) {
   if (!Array.isArray(ohlc) || ohlc.length === 0) {
-    return <p style={{ textAlign: "center" }}>Loading ETH/USD bars…</p>;
+    return (
+      <p style={{ textAlign: "center", color: "#9ca3af" }}>
+        Loading ETH/USD chart…
+      </p>
+    );
   }
 
-  const data = {
-    labels: ohlc.map((c) => c.time),
-    datasets: [
+  const series = useMemo(
+    () => [
       {
-        label: "ETH/USD Price Range",
+        name: "ETH / USD",
         data: ohlc.map((c) => ({
-          x: c.time,
-          y: c.high - c.low,   // bar height
-          base: c.low,         // bar bottom
-          open: c.open,
-          close: c.close,
+          x: c.time, // Date object from your existing code
+          y: [c.open, c.high, c.low, c.close],
         })),
-        backgroundColor: ohlc.map((c) =>
-          c.close >= c.open ? "rgba(0, 200, 83, 0.7)" : "rgba(213, 0, 0, 0.7)"
-        ),
-        borderRadius: 0,
-        barPercentage: 0.8,
       },
     ],
-  };
+    [ohlc]
+  );
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => {
-            const raw = ctx.raw;
-            return `O: ${raw.open}  H: ${raw.base + raw.y}  L: ${raw.base}  C: ${raw.close}`;
-          },
+  const options = useMemo(
+    () => ({
+      chart: {
+        type: "candlestick",
+        toolbar: { show: false },
+        background: "transparent",
+      },
+      theme: { mode: "dark" },
+      xaxis: {
+        type: "datetime",
+        labels: {
+          style: { colors: "#9ca3af" },
         },
       },
-    },
-    scales: {
-      x: {
-        type: "time",
-        time: { unit: "hour" },
-        grid: { color: "rgba(255,255,255,0.1)" },
-        ticks: { color: "#fff" },
+      yaxis: {
+        tooltip: { enabled: true },
+        labels: {
+          style: { colors: "#9ca3af" },
+        },
       },
-      y: {
-        title: { display: true, text: "Price (USD)", color: "#fff" },
-        ticks: { color: "#fff", callback: (val) => `$${val}` },
-        grid: { color: "rgba(255,255,255,0.1)" },
+      grid: { borderColor: "rgba(55,65,81,0.6)" },
+      plotOptions: {
+        candlestick: {
+          colors: {
+            upward: "#4ade80",
+            downward: "#f97373",
+          },
+          wick: { useFillColor: true },
+        },
       },
-    },
-  };
+      tooltip: { theme: "dark" },
+    }),
+    []
+  );
 
   return (
-    <div style={{
-      width: "1000px",
-      height: "560px",
-      margin: "2rem auto",
-      background: "#000",
-      border: "none",
-    }}>
-      <Bar data={data} options={options} />
+    <div
+      style={{
+        width: "100%",
+        height: "360px",
+      }}
+    >
+      <ReactApexChart
+        options={options}
+        series={series}
+        type="candlestick"
+        height={"100%"}
+        width={"100%"}
+      />
     </div>
   );
 }
