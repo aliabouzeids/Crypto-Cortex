@@ -24,7 +24,7 @@ const AgentSchema = z.object({
   final_decision: z.string(),
 });
 */
-let price_when_bought : number=299
+let price_when_bought : number=2990
 let buy_amount:number=50
 let tolerance:number=10
 
@@ -57,7 +57,7 @@ async function make_decision(): Promise<void> {
       price,
       price_when_bought, // price_when_bought
       tolerance,
-      market_state,
+      "bullish",
       false
     );
 
