@@ -7,7 +7,7 @@ import {
 } from './abi_s.js';
 import { encodeFunctionData, type Abi, parseEther, parseUnits } from 'viem';
 import { get_wallet_balance } from '../AI_decision/data_feed.js';
-import { approve } from './approve.js'; // <-- your approve function
+import { approve } from './approve.js'; 
 
 function getDeadline(): bigint {
   return BigInt(Math.floor(Date.now() / 1000) + 60 * 10);

@@ -2,12 +2,8 @@
 import { useState, useEffect } from "react";
 import EthCandleChart from "../components/candles";
 import TradingControls from "../components/trading_control";
-<<<<<<< HEAD
-import { buy, sell } from "./interaction";
-import { fetch_charts_prices } from "../../AI_decision/data_feed.js";
-=======
-import {fetch_charts_prices}from "../../AI_decision/data_feed.js"
->>>>>>> my-recovered-work
+
+import { fetch_charts_prices } from "../../AI_decision/data_feed";
 
 export default function Home() {
   const [account, setAccount] = useState(null);
@@ -38,19 +34,11 @@ export default function Home() {
     }
   }
 
-  async function buy_eth() {
-<<<<<<< HEAD
-    buy(0);
-=======
->>>>>>> my-recovered-work
+  function buy_eth() {
     alert("Buying ETH… (logic to be added)");
   }
 
-  async function sell_eth() {
-<<<<<<< HEAD
-    sell(0);
-=======
->>>>>>> my-recovered-work
+  function sell_eth() {
     alert("Selling ETH… (logic to be added)");
   }
 

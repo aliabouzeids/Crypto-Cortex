@@ -5,6 +5,7 @@ import {
   calculate_market_state,
   fetch_price,
   has_position,
+  hasWeth,
   get_wallet_balance,
 } from "./data_feed.js";
 import {buy as swapBuy , sell as swapSell} from "../Interactions/calls.js";
@@ -72,7 +73,7 @@ async function make_decision(): Promise<void> {
     }
     const price = await fetch_price();
     const market_state = await calculate_market_state();
-    const hold_position = has_position(wallet_balance, 0);
+    const {hold_position,balanceEth} = await hasWeth();
 
     const params = build_params(
       wallet_balance,
@@ -81,13 +82,13 @@ async function make_decision(): Promise<void> {
       price_when_bought,
       tolerance,
       market_state,
-      true
+      hold_position
     );
 
     const result = await finalAI.invoke(params);
 
     console.log(
-      `Market state: ${result.agent.market_state} [${new Date().toLocaleTimeString()}] Decision: ${result.agent.final_decision} | Latest Price: ${price}`
+      `Weth balance: ${balanceEth} so does it Hold Position? ${result.agent.hold_position} Market state: ${result.agent.market_state} [${new Date().toLocaleTimeString()}] Decision: ${result.agent.final_decision} | Latest Price: ${price}`
     );
 
 
@@ -95,7 +96,7 @@ async function make_decision(): Promise<void> {
 
     if (decision === "buy") {
       console.log("buying...");
-      await buy(result.buy_amount);
+      await buy(1000);
     } else if (decision === "sell") {
       console.log("selling...");
       try {

@@ -1,6 +1,6 @@
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
-import type { Address } from "viem";
+import type { Address} from "viem";
 /** 
 
 -agent schema params::
@@ -78,7 +78,7 @@ export async function fetch_charts_prices(): Promise<any[]> {
 
 // === Position Check ===
 export function has_position(balance: number, boughtPrice: number): boolean {
-  return balance <= 0 && boughtPrice > 0;
+  return balance <= 0 ;
 }
 
 // === Market State ===
@@ -107,7 +107,7 @@ export async function calculate_market_state(
 const client = createPublicClient({
   chain: mainnet,
   transport: http(
-    process.env.TENDERLY_MAINNET_FORK_RPC_URL
+    "https://virtual.mainnet.eu.rpc.tenderly.co/a6971ff8-2695-40e1-804b-e5fcf5478f8a"
   ),
 });
 
@@ -131,4 +131,44 @@ export async function get_wallet_balance(): Promise<number | null> {
   const balanceWei = await client.getBalance({ address: account as Address });
   const balanceEth = Number(balanceWei) / 1e18;
   return balanceEth;
+}
+
+
+
+
+// WETH contract address on Ethereum mainnet
+const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+
+const s_client = createPublicClient({
+  chain: mainnet,
+  transport: http("https://virtual.mainnet.eu.rpc.tenderly.co/a6971ff8-2695-40e1-804b-e5fcf5478f8a"),
+});
+const weth_balance_abi = [
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "balance", type: "uint256" }],
+  },
+];
+
+export async function hasWeth():Promise<{ hold_position: boolean; balanceEth: number }>  {
+  const res = await fetch("http://localhost:3000/api/set_account");
+
+  if (!res.ok) {
+    console.error("API not reachable:", res.status);
+  }
+
+  const data: { account?: string } = await res.json();
+  const account = data.account;
+  const balance = await s_client.readContract({
+    address: WETH_ADDRESS,
+    abi: weth_balance_abi,
+    functionName: "balanceOf",
+    args: [account],
+  });
+  const balanceEth = Number(balance) / 1e18;
+  return { hold_position: balanceEth > 0, balanceEth };
+
 }
