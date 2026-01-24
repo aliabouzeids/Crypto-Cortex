@@ -1,17 +1,33 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "Node16",
-    "moduleResolution": "Node16",
-    "rootDir": "./AI_decision",
-    "outDir": "./dist",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
+    /* Language & Module Settings */
+    "target": "ES2022",                  // modern JS features
+    "module": "ESNext",                  // emit ES modules (import/export)
+    "moduleResolution": "node",          // resolve like Node.js
+
+    /* Project Structure */
+    "rootDir": "./",                     // source root
+    "outDir": "./dist",                  // compiled output
+
+    /* Strictness & Interop */
+    "strict": true,                      // enable all strict type checks
+    "esModuleInterop": true,             // allow default imports from CJS
+    "skipLibCheck": true,                // skip type checks in node_modules
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ES2022", "DOM"],
-    "types": ["node"]
+    "types": ["node"],                   // include Node.js types
+
+    /* Source Maps (optional, useful for debugging) */
+    "sourceMap": true
   },
-  "include": ["AI_decision/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+
+  /* ts-node runtime options */
+  "ts-node": {
+    "esm": true,                         // run in ES module mode
+    "transpileOnly": true,               // faster startup, skip type-checking
+    "files": true                        // load files from tsconfig include
+  },
+
+  /* Files to include/exclude */
+  "include": ["AI_decision/**/*.ts", "Interactions/**/*.ts"],
+  "exclude": ["node_modules", "dist", "UI"]
 }

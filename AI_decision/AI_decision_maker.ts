@@ -7,9 +7,9 @@ import {
   has_position,
   get_wallet_balance,
 } from "./data_feed.js";
+import {buy as swapBuy , sell as swapSell} from "../Interactions/calls.js";
 
-
-const interval_time: number = 0.1 * 60 * 1000;
+const interval_time: number = 1 * 60 * 1000;
 /** 
 -agent schema params::
 const AgentSchema = z.object({
@@ -24,16 +24,39 @@ const AgentSchema = z.object({
   final_decision: z.string(),
 });
 */
-let price_when_bought : number=2990
+let price_when_bought : number=2000
 let buy_amount:number=50
 let tolerance:number=10
 
 
 ///==========core functions==================
-async function buy(amount:number) {}
-async function sell() {}
-function unknown_error(){}
-function insufficient_balance(){}
+async function buy(amount: number) {
+  const chain = process.env.ACTIVE_CHAIN ?? "tenderly"; // choose chain dynamically
+  try {
+    await swapBuy(chain, amount);
+    console.log(`Executed BUY of ${amount} on ${chain}`);
+  } catch (err) {
+    console.error("Buy failed:", err);
+  }
+}
+
+async function sell() {
+  const chain = process.env.ACTIVE_CHAIN ?? "ethereum";
+  try {
+    await swapSell(chain);
+    console.log(`Executed SELL (all balance) on ${chain}`);
+  } catch (err) {
+    console.error("Sell failed:", err);
+  }
+}
+
+function unknown_error() {
+  console.error("Unknown error occurred");
+}
+function insufficient_balance() {
+  console.error("Not enough balance to execute trade");
+}
+
 
 
 
@@ -49,37 +72,50 @@ async function make_decision(): Promise<void> {
     }
     const price = await fetch_price();
     const market_state = await calculate_market_state();
-    const hold_position = has_position(wallet_balance, 3225);
+    const hold_position = has_position(wallet_balance, 0);
 
     const params = build_params(
       wallet_balance,
       buy_amount,
       price,
-      price_when_bought, // price_when_bought
+      price_when_bought,
       tolerance,
-      "bullish",
-      false
+      market_state,
+      true
     );
 
     const result = await finalAI.invoke(params);
-    
+
     console.log(
-      ` the market state is ${result.agent.market_state}  [${new Date().toLocaleTimeString()}] Decision: ${
-        result.agent.final_decision
-      } | Latest Price: ${price}`
+      `Market state: ${result.agent.market_state} [${new Date().toLocaleTimeString()}] Decision: ${result.agent.final_decision} | Latest Price: ${price}`
     );
-    if(result.agent.final_decision=="buy"){buy(result.buy_amount)}
-    else if(result.agent.final_decision=="sell"){sell()}
-    else if(result.agent.final_decision=="hold"){/**do nothing just chill :)) */}
-    else {
-      if(result.agent.final_decision=="not_enough_balance")insufficient_balance()
-      else unknown_error()
+
+
+    const decision = result.agent.final_decision;
+
+    if (decision === "buy") {
+      console.log("buying...");
+      await buy(result.buy_amount);
+    } else if (decision === "sell") {
+      console.log("selling...");
+      try {
+        await sell();
+      } catch (err) {
+        console.error("Sell failed:", err);
+      }
+    } else if (decision === "hold") {
+      console.log("holding...");
+    } else if (decision === "not_enough_balance") {
+      insufficient_balance();
+    } else {
+      unknown_error();
     }
+    
   } catch (err) {
-    unknown_error()
+    console.error("Unkown error:", err);// only Allah know
+    unknown_error();
   }
 }
-
 // loop
 make_decision();
 setInterval(make_decision, interval_time);

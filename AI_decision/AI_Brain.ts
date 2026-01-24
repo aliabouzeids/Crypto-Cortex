@@ -34,7 +34,7 @@ function checkWalletBalance(state: State): string {
   }
 }
 
-function decideGoal(state: State): string {
+function decideGoal(state: State): string { 
   const agent = state.agent;
   
   if (agent.hold_position) {
@@ -50,7 +50,8 @@ function decideGoal(state: State): string {
       return "hold"
     }
   }
-  return "buy";//buy at first
+  if(agent.market_state=="bullish")return "buy";//buy at first
+  else return "hold"//dont buy when the market is bearish
 }
 
 function buy(state: State): State {

@@ -1,68 +1,163 @@
-import { createPublicClient, http } from "viem";
-import { mainnet } from "viem/chains";
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.build_params = build_params;
+exports.fetch_price = fetch_price;
+exports.fetch_charts_prices = fetch_charts_prices;
+exports.has_position = has_position;
+exports.calculate_market_state = calculate_market_state;
+exports.get_wallet_balance = get_wallet_balance;
+var viem_1 = require("viem");
+var chains_1 = require("viem/chains");
 // === Build Params ===
-export function build_params(wallet_balance, prices, price_when_bought, market_state, hold_position) {
+function build_params(wallet_balance, buy_amount, last_price, price_when_bought, tolerance, market_state, hold_position) {
     return {
         agent: {
-            wallet_balance,
-            prices,
-            price_when_bought,
-            market_state,
-            hold_position,
+            wallet_balance: wallet_balance,
+            buy_amount: buy_amount,
+            last_price: last_price,
+            price_when_bought: price_when_bought,
+            tolerance: tolerance,
+            market_state: market_state,
+            hold_position: hold_position,
             final_decision: "",
         },
     };
 }
-// === Fetch Prices ===
-export async function fetch_prices() {
-    const res = await fetch("https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1m&limit=5");
-    const data = await res.json();
-    return data.map((candle) => parseFloat(candle[4])); // close prices
+// === Fetch Price ===
+function fetch_price() {
+    return __awaiter(this, void 0, void 0, function () {
+        var res, data, lastCandle, lastPrice;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, fetch("https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1m&limit=5")];
+                case 1:
+                    res = _a.sent();
+                    return [4 /*yield*/, res.json()];
+                case 2:
+                    data = _a.sent();
+                    lastCandle = data[data.length - 1];
+                    lastPrice = parseFloat(lastCandle[4]);
+                    return [2 /*return*/, lastPrice];
+            }
+        });
+    });
 }
 // === Fetch Chart Prices ===
-export async function fetch_charts_prices() {
-    const res = await fetch("https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1m&limit=5");
-    return res.json();
+function fetch_charts_prices() {
+    return __awaiter(this, void 0, void 0, function () {
+        var res;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, fetch("https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1m&limit=5")];
+                case 1:
+                    res = _a.sent();
+                    return [2 /*return*/, res.json()];
+            }
+        });
+    });
 }
 // === Position Check ===
-export function has_position(balance, boughtPrice) {
+function has_position(balance, boughtPrice) {
     return balance <= 0 && boughtPrice > 0;
 }
 // === Market State ===
-export async function calculate_market_state(symbol = "ETHUSDT", interval = "1h", limit = 100) {
-    const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const prices = data.map((candle) => parseFloat(candle[4]));
-    if (prices.length < 2)
-        return "neutral";
-    const first = prices[0];
-    const last = prices[prices.length - 1];
-    if (last > first)
-        return "bullish";
-    if (last < first)
-        return "bearish";
-    return "neutral";
+function calculate_market_state() {
+    return __awaiter(this, arguments, void 0, function (symbol, interval, limit) {
+        var url, res, data, prices, first, last;
+        if (symbol === void 0) { symbol = "ETHUSDT"; }
+        if (interval === void 0) { interval = "1h"; }
+        if (limit === void 0) { limit = 100; }
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    url = "https://api.binance.com/api/v3/klines?symbol=".concat(symbol, "&interval=").concat(interval, "&limit=").concat(limit);
+                    return [4 /*yield*/, fetch(url)];
+                case 1:
+                    res = _a.sent();
+                    return [4 /*yield*/, res.json()];
+                case 2:
+                    data = _a.sent();
+                    prices = data.map(function (candle) { return parseFloat(candle[4]); });
+                    if (prices.length < 2)
+                        return [2 /*return*/, "neutral"];
+                    first = prices[0];
+                    last = prices[prices.length - 1];
+                    if (last > first)
+                        return [2 /*return*/, "bullish"];
+                    if (last < first)
+                        return [2 /*return*/, "bearish"];
+                    return [2 /*return*/, "neutral"];
+            }
+        });
+    });
 }
 // === Wallet Balance ===
-const client = createPublicClient({
-    chain: mainnet,
-    transport: http("https://mainnet.infura.io/v3/cf1b77a759114db3a815944536bc117b"),
+var client = (0, viem_1.createPublicClient)({
+    chain: chains_1.mainnet,
+    transport: (0, viem_1.http)("https://mainnet.infura.io/v3/cf1b77a759114db3a815944536bc117b"),
 });
-export async function get_wallet_balance() {
-    const res = await fetch("http://localhost:3000/api/set_account");
-    if (!res.ok) {
-        console.error("API not reachable:", res.status);
-        return null;
-    }
-    const data = await res.json();
-    const account = data.account;
-    if (!account) {
-        console.error("No account connected yet");
-        return null;
-    }
-    const balanceWei = await client.getBalance({ address: account });
-    const balanceEth = Number(balanceWei) / 1e18;
-    return balanceEth;
+function get_wallet_balance() {
+    return __awaiter(this, void 0, void 0, function () {
+        var res, data, account, balanceWei, balanceEth;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, fetch("http://localhost:3000/api/set_account")];
+                case 1:
+                    res = _a.sent();
+                    if (!res.ok) {
+                        console.error("API not reachable:", res.status);
+                        return [2 /*return*/, null];
+                    }
+                    return [4 /*yield*/, res.json()];
+                case 2:
+                    data = _a.sent();
+                    account = data.account;
+                    if (!account) {
+                        console.error("No account connected yet");
+                        return [2 /*return*/, null];
+                    }
+                    return [4 /*yield*/, client.getBalance({ address: account })];
+                case 3:
+                    balanceWei = _a.sent();
+                    balanceEth = Number(balanceWei) / 1e18;
+                    return [2 /*return*/, balanceEth];
+            }
+        });
+    });
 }
-//# sourceMappingURL=data_feed.js.map
