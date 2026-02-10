@@ -1,2 +1,2 @@
 [build]
-  command = "cd UI && npm run build"
+  command = " npm run build"
