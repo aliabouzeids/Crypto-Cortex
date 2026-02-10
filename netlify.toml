@@ -1,6 +1,2 @@
 [build]
-  base = "UI"
-  command = "npm run build"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+  command = "cd UI && npm ci && npm run build"
