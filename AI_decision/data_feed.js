@@ -42,10 +42,11 @@ exports.fetch_charts_prices = fetch_charts_prices;
 exports.has_position = has_position;
 exports.calculate_market_state = calculate_market_state;
 exports.get_wallet_balance = get_wallet_balance;
+exports.hasWeth = hasWeth;
 var viem_1 = require("viem");
 var chains_1 = require("viem/chains");
 // === Build Params ===
-function build_params(wallet_balance, buy_amount, last_price, price_when_bought, tolerance, market_state, hold_position) {
+function build_params(wallet_balance, buy_amount, last_price, price_when_bought, tolerance, market_state, confidence, hold_position) {
     return {
         agent: {
             wallet_balance: wallet_balance,
@@ -94,12 +95,12 @@ function fetch_charts_prices() {
 }
 // === Position Check ===
 function has_position(balance, boughtPrice) {
-    return balance <= 0 && boughtPrice > 0;
+    return balance <= 0;
 }
 // === Market State ===
 function calculate_market_state() {
     return __awaiter(this, arguments, void 0, function (symbol, interval, limit) {
-        var url, res, data, prices, first, last;
+        var url, res, data, closes, sma, n, x, xMean, yMean, slope, mean, variance, volatility, market_state, confidence;
         if (symbol === void 0) { symbol = "ETHUSDT"; }
         if (interval === void 0) { interval = "1h"; }
         if (limit === void 0) { limit = 100; }
@@ -113,16 +114,29 @@ function calculate_market_state() {
                     return [4 /*yield*/, res.json()];
                 case 2:
                     data = _a.sent();
-                    prices = data.map(function (candle) { return parseFloat(candle[4]); });
-                    if (prices.length < 2)
-                        return [2 /*return*/, "neutral"];
-                    first = prices[0];
-                    last = prices[prices.length - 1];
-                    if (last > first)
-                        return [2 /*return*/, "bullish"];
-                    if (last < first)
-                        return [2 /*return*/, "bearish"];
-                    return [2 /*return*/, "neutral"];
+                    closes = data.map(function (candle) { return parseFloat(candle[4]); }).filter(function (p) { return p > 0; });
+                    if (closes.length < 5)
+                        return [2 /*return*/, { market_state: "neutral", confidence: 0 }];
+                    sma = closes.map(function (_, i, arr) {
+                        var slice = arr.slice(Math.max(0, i - 20), i + 1);
+                        return slice.reduce(function (a, b) { return a + b; }, 0) / slice.length;
+                    });
+                    n = sma.length;
+                    x = Array.from({ length: n }, function (_, i) { return i; });
+                    xMean = x.reduce(function (a, b) { return a + b; }, 0) / n;
+                    yMean = sma.reduce(function (a, b) { return a + b; }, 0) / n;
+                    slope = x.reduce(function (sum, xi, i) { return sum + (xi - xMean) * (sma[i] - yMean); }, 0) /
+                        x.reduce(function (sum, xi) { return sum + Math.pow((xi - xMean), 2); }, 0);
+                    mean = yMean;
+                    variance = sma.reduce(function (sum, p) { return sum + Math.pow((p - mean), 2); }, 0) / n;
+                    volatility = Math.sqrt(variance);
+                    market_state = "neutral";
+                    if (slope > 0.0 && Math.abs(slope) > volatility * 0.001)
+                        market_state = "bullish";
+                    else if (slope < 0.0 && Math.abs(slope) > volatility * 0.001)
+                        market_state = "bearish";
+                    confidence = Math.min(1, Math.abs(slope) / (volatility + 1e-8));
+                    return [2 /*return*/, { market_state: market_state, confidence: confidence }];
             }
         });
     });
@@ -130,7 +144,7 @@ function calculate_market_state() {
 // === Wallet Balance ===
 var client = (0, viem_1.createPublicClient)({
     chain: chains_1.mainnet,
-    transport: (0, viem_1.http)("https://mainnet.infura.io/v3/cf1b77a759114db3a815944536bc117b"),
+    transport: (0, viem_1.http)("https://virtual.mainnet.eu.rpc.tenderly.co/a6971ff8-2695-40e1-804b-e5fcf5478f8a"),
 });
 function get_wallet_balance() {
     return __awaiter(this, void 0, void 0, function () {
@@ -157,6 +171,50 @@ function get_wallet_balance() {
                     balanceWei = _a.sent();
                     balanceEth = Number(balanceWei) / 1e18;
                     return [2 /*return*/, balanceEth];
+            }
+        });
+    });
+}
+// WETH contract address on Ethereum mainnet
+var WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+var s_client = (0, viem_1.createPublicClient)({
+    chain: chains_1.mainnet,
+    transport: (0, viem_1.http)("https://virtual.mainnet.eu.rpc.tenderly.co/a6971ff8-2695-40e1-804b-e5fcf5478f8a"),
+});
+var weth_balance_abi = [
+    {
+        type: "function",
+        name: "balanceOf",
+        stateMutability: "view",
+        inputs: [{ name: "account", type: "address" }],
+        outputs: [{ name: "balance", type: "uint256" }],
+    },
+];
+function hasWeth() {
+    return __awaiter(this, void 0, void 0, function () {
+        var res, data, account, balance, balanceEth;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, fetch("http://localhost:3000/api/set_account")];
+                case 1:
+                    res = _a.sent();
+                    if (!res.ok) {
+                        console.error("API not reachable:", res.status);
+                    }
+                    return [4 /*yield*/, res.json()];
+                case 2:
+                    data = _a.sent();
+                    account = data.account;
+                    return [4 /*yield*/, s_client.readContract({
+                            address: WETH_ADDRESS,
+                            abi: weth_balance_abi,
+                            functionName: "balanceOf",
+                            args: [account],
+                        })];
+                case 3:
+                    balance = _a.sent();
+                    balanceEth = Number(balance) / 1e18;
+                    return [2 /*return*/, { hold_position: balanceEth > 0, balanceEth: balanceEth }];
             }
         });
     });

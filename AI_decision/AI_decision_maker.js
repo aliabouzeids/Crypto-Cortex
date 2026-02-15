@@ -36,27 +36,40 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.setBoughtPrice = setBoughtPrice;
+exports.setAmount = setAmount;
+exports.setTolerance = setTolerance;
+exports.setIntervalTime = setIntervalTime;
+exports.stopAgent = stopAgent;
 var AI_Brain_js_1 = require("./AI_Brain.js");
 var data_feed_js_1 = require("./data_feed.js");
 var calls_js_1 = require("../Interactions/calls.js");
-var interval_time = 5 * 60 * 1000;
-/**
--agent schema params::
-const AgentSchema = z.object({
-  wallet_balance: z.number(),
-  expected_future_market_price:z.number(),
-  buy_amount:z.number(),
-  last_price: z.number(),
-  price_when_bought: z.number(),
-  tolerance:z.number(),
-  market_state: z.string(),
-  hold_position: z.boolean(),
-  final_decision: z.string(),
-});
-*/
-var price_when_bought = 2938;
+var interval_time = 1 * 60 * 1000;
+var last_price = 0;
+var price_when_bought = 2000;
 var buy_amount = 50;
 var tolerance = 10;
+var loopId = null;
+function setBoughtPrice() {
+    if (last_price > 0)
+        price_when_bought = last_price;
+}
+function setAmount(amount) {
+    if (amount > 0)
+        buy_amount = amount;
+    else
+        alert("amount is not enough");
+}
+function setTolerance(_tolerance) {
+    if (_tolerance > 0)
+        tolerance = _tolerance;
+    else
+        alert("tolerance is not enough");
+}
+function setIntervalTime(_interval) {
+    if (_interval >= 1 * 60 * 1000)
+        interval_time = _interval;
+}
 ///==========core functions==================
 function buy(amount) {
     return __awaiter(this, void 0, void 0, function () {
@@ -114,55 +127,72 @@ function unknown_error() {
 function insufficient_balance() {
     console.error("Not enough balance to execute trade");
 }
+///================STOP BOT=================
+function stopAgent() {
+    if (loopId) {
+        clearInterval(loopId);
+        loopId = null;
+        console.log("Agent loop stopped.");
+    }
+    else {
+        console.log("Agent loop is not running.");
+    }
+}
 ///================LOOP BOT=================
 function make_decision() {
     return __awaiter(this, void 0, void 0, function () {
-        var wallet_balance, price, market_state, hold_position, params, result, decision, err_3, err_4;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var wallet_balance, price, _a, market_state, confidence, _b, hold_position, balanceEth, params, result, decision, err_3, err_4;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
-                    _a.trys.push([0, 13, , 14]);
+                    _c.trys.push([0, 14, , 15]);
                     return [4 /*yield*/, (0, data_feed_js_1.get_wallet_balance)()];
                 case 1:
-                    wallet_balance = _a.sent();
+                    wallet_balance = _c.sent();
                     if (wallet_balance === null) {
                         console.error("Wallet balance unavailable");
                         return [2 /*return*/];
                     }
                     return [4 /*yield*/, (0, data_feed_js_1.fetch_price)()];
                 case 2:
-                    price = _a.sent();
+                    price = _c.sent();
+                    last_price = price;
                     return [4 /*yield*/, (0, data_feed_js_1.calculate_market_state)()];
                 case 3:
-                    market_state = _a.sent();
-                    hold_position = (0, data_feed_js_1.has_position)(wallet_balance, 0);
-                    params = (0, data_feed_js_1.build_params)(wallet_balance, buy_amount, price, price_when_bought, tolerance, market_state, hold_position);
-                    return [4 /*yield*/, AI_Brain_js_1.default.invoke(params)];
+                    _a = _c.sent(), market_state = _a.market_state, confidence = _a.confidence;
+                    return [4 /*yield*/, (0, data_feed_js_1.hasWeth)()];
                 case 4:
-                    result = _a.sent();
-                    decision = result.agent.final_decision;
-                    if (!(decision === "buy")) return [3 /*break*/, 6];
-                    console.log("buying...");
-                    return [4 /*yield*/, buy(result.buy_amount)];
+                    _b = _c.sent(), hold_position = _b.hold_position, balanceEth = _b.balanceEth;
+                    if (!hold_position)
+                        price_when_bought = 0;
+                    params = (0, data_feed_js_1.build_params)(wallet_balance, buy_amount, price, price_when_bought, tolerance, market_state, confidence, hold_position);
+                    return [4 /*yield*/, AI_Brain_js_1.default.invoke(params)];
                 case 5:
-                    _a.sent();
-                    return [3 /*break*/, 12];
+                    result = _c.sent();
+                    console.log("Weth balance: ".concat(balanceEth, " so does it Hold Position? ").concat(result.agent.hold_position, " Market state: ").concat(result.agent.market_state, " [").concat(new Date().toLocaleTimeString(), "] Decision: ").concat(result.agent.final_decision, " | Latest Price: ").concat(price));
+                    decision = result.agent.final_decision;
+                    if (!(decision === "buy")) return [3 /*break*/, 7];
+                    console.log("buying...");
+                    return [4 /*yield*/, buy(1000)];
                 case 6:
-                    if (!(decision === "sell")) return [3 /*break*/, 11];
-                    console.log("selling...");
-                    _a.label = 7;
+                    _c.sent();
+                    return [3 /*break*/, 13];
                 case 7:
-                    _a.trys.push([7, 9, , 10]);
-                    return [4 /*yield*/, sell()];
+                    if (!(decision === "sell")) return [3 /*break*/, 12];
+                    console.log("selling...");
+                    _c.label = 8;
                 case 8:
-                    _a.sent();
-                    return [3 /*break*/, 10];
+                    _c.trys.push([8, 10, , 11]);
+                    return [4 /*yield*/, sell()];
                 case 9:
-                    err_3 = _a.sent();
+                    _c.sent();
+                    return [3 /*break*/, 11];
+                case 10:
+                    err_3 = _c.sent();
                     console.error("Sell failed:", err_3);
-                    return [3 /*break*/, 10];
-                case 10: return [3 /*break*/, 12];
-                case 11:
+                    return [3 /*break*/, 11];
+                case 11: return [3 /*break*/, 13];
+                case 12:
                     if (decision === "hold") {
                         console.log("holding...");
                     }
@@ -172,20 +202,20 @@ function make_decision() {
                     else {
                         unknown_error();
                     }
-                    _a.label = 12;
-                case 12:
-                    console.log("Market state: ".concat(result.agent.market_state, " [").concat(new Date().toLocaleTimeString(), "] Decision: ").concat(result.agent.final_decision, " | Latest Price: ").concat(price));
-                    return [3 /*break*/, 14];
-                case 13:
-                    err_4 = _a.sent();
+                    _c.label = 13;
+                case 13: return [3 /*break*/, 15];
+                case 14:
+                    err_4 = _c.sent();
                     console.error("Unkown error:", err_4); // only Allah know
                     unknown_error();
-                    return [3 /*break*/, 14];
-                case 14: return [2 /*return*/];
+                    return [3 /*break*/, 15];
+                case 15: return [2 /*return*/];
             }
         });
     });
 }
-// loop
 make_decision();
-setInterval(make_decision, interval_time);
+loopId = setInterval(make_decision, interval_time);
+// let me guide u to the existing page.js:
+// its here:`https://github.com/aliabouzeids/Crypto-Cortex/blob/main/UI/app/page.js`
+// as u can see its not connected to any of the backend files now its an empty shell

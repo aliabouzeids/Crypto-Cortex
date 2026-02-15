@@ -143,18 +143,8 @@ export default function Home() {
             >
               AI crypto trading agent on Cronos
             </div>
-            <h1
-              style={{
-                fontSize: "2.75rem",
-                lineHeight: 1.1,
-                fontWeight: 700,
-                marginBottom: "1rem",
-              }}
-            >
-              Create your agent. <br />
-              Fund it.
-              <br />
-              Let it trade.
+           <h1  className="text-2xl md:text-4xl font-bold mb-6 text-center">
+              AI Crypto Cortex 
             </h1>
             <p
               style={{

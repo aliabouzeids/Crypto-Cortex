@@ -38,88 +38,122 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buy = buy;
 exports.sell = sell;
-var chains_clients_1 = require("./chains_clients");
-var abi_s_1 = require("./abi_s");
+var chains_clients_js_1 = require("./chains_clients.js");
+var abi_s_js_1 = require("./abi_s.js");
 var viem_1 = require("viem");
-var data_feed_1 = require("../AI_decision/data_feed");
+var data_feed_js_1 = require("../AI_decision/data_feed.js");
+var AI_decision_maker_js_1 = require("../AI_decision/AI_decision_maker.js");
+var approve_js_1 = require("./approve.js");
+var viem_2 = require("viem");
 function getDeadline() {
     return BigInt(Math.floor(Date.now() / 1000) + 60 * 10);
 }
 // --- BUY ---
 function buy(chain, amount) {
     return __awaiter(this, void 0, void 0, function () {
-        var cfg, client, deadline, data, data;
+        var cfg, client, deadline, amountIn, data, tx, receipt, data, tx, receipt;
         return __generator(this, function (_a) {
-            cfg = chains_clients_1.chainConfigs[chain];
-            if (!cfg || !cfg.tokens || !cfg.router)
-                throw new Error("Unsupported chain: ".concat(chain));
-            client = (0, chains_clients_1.makeClient)(cfg);
-            deadline = getDeadline();
-            if (chain === 'ethereum' || chain === 'tenderly') {
-                data = (0, viem_1.encodeFunctionData)({
-                    abi: abi_s_1.swapUsdcToWethUniswapV3,
-                    functionName: 'exactInputSingle',
-                    args: [{
-                            tokenIn: cfg.tokens.USDC,
-                            tokenOut: cfg.tokens.WETH,
-                            fee: 3000,
-                            recipient: client.account.address,
-                            deadline: deadline,
-                            amountIn: BigInt(amount),
-                            amountOutMinimum: 0n,
-                            sqrtPriceLimitX96: 0n,
-                        }],
-                });
-                return [2 /*return*/, client.sendTransaction({
-                        account: client.account,
-                        chain: client.chain,
-                        to: cfg.router,
-                        data: data,
-                    })];
+            switch (_a.label) {
+                case 0:
+                    cfg = chains_clients_js_1.chainConfigs[chain];
+                    if (!cfg || !cfg.tokens || !cfg.router)
+                        throw new Error("Unsupported chain: ".concat(chain));
+                    client = (0, chains_clients_js_1.makeClient)(cfg);
+                    deadline = getDeadline();
+                    amountIn = (0, viem_1.parseUnits)(amount.toString(), 6);
+                    // approve USDC before swap
+                    return [4 /*yield*/, (0, approve_js_1.approve)(chain, cfg.tokens.USDC, amountIn)];
+                case 1:
+                    // approve USDC before swap
+                    _a.sent();
+                    if (!(chain === 'ethereum' || chain === 'tenderly')) return [3 /*break*/, 4];
+                    data = (0, viem_1.encodeFunctionData)({
+                        abi: abi_s_js_1.swapUsdcToWethUniswapV3,
+                        functionName: 'exactInputSingle',
+                        args: [{
+                                tokenIn: cfg.tokens.USDC,
+                                tokenOut: cfg.tokens.WETH,
+                                fee: 3000,
+                                recipient: client.account.address,
+                                deadline: deadline,
+                                amountIn: amountIn,
+                                amountOutMinimum: 0n,
+                                sqrtPriceLimitX96: 0n,
+                            }],
+                    });
+                    return [4 /*yield*/, client.sendTransaction({
+                            account: client.account,
+                            chain: client.chain,
+                            to: cfg.router,
+                            data: data,
+                            kzg: undefined
+                        })];
+                case 2:
+                    tx = _a.sent();
+                    return [4 /*yield*/, (0, viem_2.publicActions)(client).waitForTransactionReceipt({ hash: tx })];
+                case 3:
+                    receipt = _a.sent();
+                    if (receipt)
+                        (0, AI_decision_maker_js_1.setBoughtPrice)();
+                    return [2 /*return*/, receipt];
+                case 4:
+                    if (!(chain === 'cronos')) return [3 /*break*/, 7];
+                    data = (0, viem_1.encodeFunctionData)({
+                        abi: abi_s_js_1.swapUsdcToWcroVVS,
+                        functionName: 'swapExactTokensForTokens',
+                        args: [
+                            amountIn,
+                            0n,
+                            [cfg.tokens.USDC, cfg.tokens.WCRO],
+                            client.account.address,
+                            deadline,
+                        ],
+                    });
+                    return [4 /*yield*/, client.sendTransaction({
+                            account: client.account,
+                            chain: client.chain,
+                            to: cfg.router,
+                            data: data,
+                            kzg: undefined
+                        })];
+                case 5:
+                    tx = _a.sent();
+                    return [4 /*yield*/, (0, viem_2.publicActions)(client).waitForTransactionReceipt({ hash: tx })];
+                case 6:
+                    receipt = _a.sent();
+                    if (receipt)
+                        (0, AI_decision_maker_js_1.setBoughtPrice)();
+                    return [2 /*return*/, receipt];
+                case 7: throw new Error("Unsupported chain for buy: ".concat(chain));
             }
-            if (chain === 'cronos') {
-                data = (0, viem_1.encodeFunctionData)({
-                    abi: abi_s_1.swapUsdcToWcroVVS,
-                    functionName: 'swapExactTokensForTokens',
-                    args: [
-                        BigInt(amount),
-                        0n,
-                        [cfg.tokens.USDC, cfg.tokens.WCRO],
-                        client.account.address,
-                        deadline,
-                    ],
-                });
-                return [2 /*return*/, client.sendTransaction({
-                        account: client.account,
-                        chain: client.chain,
-                        to: cfg.router,
-                        data: data,
-                    })];
-            }
-            throw new Error("Unsupported chain for buy: ".concat(chain));
         });
     });
 }
 // --- SELL (sells everything) ---
 function sell(chain) {
     return __awaiter(this, void 0, void 0, function () {
-        var cfg, client, deadline, balance, data, data;
+        var cfg, client, deadline, balanceEth, balanceWei, tokenToSell, data, data;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    cfg = chains_clients_1.chainConfigs[chain];
+                    cfg = chains_clients_js_1.chainConfigs[chain];
                     if (!cfg || !cfg.tokens || !cfg.router)
                         throw new Error("Unsupported chain: ".concat(chain));
-                    client = (0, chains_clients_1.makeClient)(cfg);
+                    client = (0, chains_clients_js_1.makeClient)(cfg);
                     deadline = getDeadline();
-                    return [4 /*yield*/, (0, data_feed_1.get_wallet_balance)()];
+                    return [4 /*yield*/, (0, data_feed_js_1.get_wallet_balance)()];
                 case 1:
-                    balance = _a.sent();
-                    if (!balance || balance <= 0)
+                    balanceEth = _a.sent();
+                    if (!balanceEth || balanceEth <= 0)
                         throw new Error("No balance to sell");
+                    balanceWei = (0, viem_1.parseEther)(balanceEth.toString());
+                    tokenToSell = chain === 'cronos' ? cfg.tokens.WCRO : cfg.tokens.WETH;
+                    return [4 /*yield*/, (0, approve_js_1.approve)(chain, tokenToSell, balanceWei)];
+                case 2:
+                    _a.sent();
                     if (chain === 'ethereum' || chain === 'tenderly') {
                         data = (0, viem_1.encodeFunctionData)({
-                            abi: abi_s_1.swapWethToUsdcUniswapV3,
+                            abi: abi_s_js_1.swapWethToUsdcUniswapV3,
                             functionName: 'exactInputSingle',
                             args: [{
                                     tokenIn: cfg.tokens.WETH,
@@ -127,7 +161,7 @@ function sell(chain) {
                                     fee: 3000,
                                     recipient: client.account.address,
                                     deadline: deadline,
-                                    amountIn: BigInt(balance),
+                                    amountIn: balanceWei,
                                     amountOutMinimum: 0n,
                                     sqrtPriceLimitX96: 0n,
                                 }],
@@ -137,14 +171,15 @@ function sell(chain) {
                                 chain: client.chain,
                                 to: cfg.router,
                                 data: data,
+                                kzg: undefined
                             })];
                     }
                     if (chain === 'cronos') {
                         data = (0, viem_1.encodeFunctionData)({
-                            abi: abi_s_1.swapWcroToUsdcVVS,
+                            abi: abi_s_js_1.swapWcroToUsdcVVS,
                             functionName: 'swapExactTokensForTokens',
                             args: [
-                                BigInt(balance),
+                                balanceWei,
                                 0n,
                                 [cfg.tokens.WCRO, cfg.tokens.USDC],
                                 client.account.address,
@@ -156,6 +191,7 @@ function sell(chain) {
                                 chain: client.chain,
                                 to: cfg.router,
                                 data: data,
+                                kzg: undefined
                             })];
                     }
                     throw new Error("Unsupported chain for sell: ".concat(chain));

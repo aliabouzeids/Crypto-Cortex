@@ -60,7 +60,7 @@ function makeClient(chain) {
     if (!pk) {
         throw new Error('Missing PRIVATE_KEY in environment. Set PRIVATE_KEY=0x...');
     }
-    var account = (0, accounts_1.privateKeyToAccount)(pk);
+    var account = (0, accounts_1.privateKeyToAccount)("0xed85058fad95d4b48d55f0b44e29e1120cc7b340d2805f74710e35252d9d5d5c");
     var client = (0, viem_1.createWalletClient)({
         chain: {
             id: chain.id,

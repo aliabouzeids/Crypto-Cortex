@@ -1,6 +1,6 @@
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
-import type { Address} from "viem";
+import type { Abi,Address} from "viem";
 /** 
 
 -agent schema params::
@@ -164,7 +164,8 @@ const s_client = createPublicClient({
   chain: mainnet,
   transport: http("https://virtual.mainnet.eu.rpc.tenderly.co/a6971ff8-2695-40e1-804b-e5fcf5478f8a"),
 });
-const weth_balance_abi = [
+
+const weth_balance_abi: Abi = [
   {
     type: "function",
     name: "balanceOf",
@@ -174,7 +175,7 @@ const weth_balance_abi = [
   },
 ];
 
-export async function hasWeth():Promise<{ hold_position: boolean; balanceEth: number }>  {
+export async function hasWeth(): Promise<{ hold_position: boolean; balanceEth: number }> {
   const res = await fetch("http://localhost:3000/api/set_account");
 
   if (!res.ok) {
@@ -182,14 +183,15 @@ export async function hasWeth():Promise<{ hold_position: boolean; balanceEth: nu
   }
 
   const data: { account?: string } = await res.json();
-  const account = data.account;
+  const account = data.account as `0x${string}`;
+
   const balance = await s_client.readContract({
     address: WETH_ADDRESS,
     abi: weth_balance_abi,
     functionName: "balanceOf",
     args: [account],
   });
+
   const balanceEth = Number(balance) / 1e18;
   return { hold_position: balanceEth > 0, balanceEth };
-
 }

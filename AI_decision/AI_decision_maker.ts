@@ -131,4 +131,3 @@ async function make_decision(): Promise<void> {
 
 make_decision();
 loopId = setInterval(make_decision, interval_time);
-

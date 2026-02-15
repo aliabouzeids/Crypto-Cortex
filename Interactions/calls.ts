@@ -46,6 +46,7 @@ export async function buy(chain: string, amount: number) {
       chain: client.chain,
       to: cfg.router as `0x${string}`,
       data,
+      kzg: undefined
     });
     const receipt = await publicActions(client).waitForTransactionReceipt({ hash: tx });
     if (receipt) setBoughtPrice();
@@ -70,6 +71,7 @@ export async function buy(chain: string, amount: number) {
       chain: client.chain,
       to: cfg.router as `0x${string}`,
       data,
+      kzg: undefined
     });
     const receipt = await publicActions(client).waitForTransactionReceipt({ hash: tx });
     if (receipt) setBoughtPrice();
@@ -116,6 +118,7 @@ export async function sell(chain: string) {
       chain: client.chain,
       to: cfg.router as `0x${string}`,
       data,
+      kzg: undefined
     });
   }
 
@@ -137,6 +140,7 @@ export async function sell(chain: string) {
       chain: client.chain, 
       to: cfg.router as `0x${string}`,
       data,
+      kzg: undefined
     });
   }
 
