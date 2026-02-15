@@ -1,35 +1,35 @@
-import { number } from "zod";
 import finalAI from "./AI_Brain.js";
 import {
   build_params,
   calculate_market_state,
   fetch_price,
-  has_position,
   hasWeth,
   get_wallet_balance,
 } from "./data_feed.js";
 import {buy as swapBuy , sell as swapSell} from "../Interactions/calls.js";
 
-const interval_time: number = 1 * 60 * 1000;
-/** 
--agent schema params::
-const AgentSchema = z.object({
-  wallet_balance: z.number(),
-  expected_future_market_price:z.number(),
-  buy_amount:z.number(),
-  last_price: z.number(),
-  price_when_bought: z.number(),
-  tolerance:z.number(),
-  market_state: z.string(),
-  hold_position: z.boolean(),
-  final_decision: z.string(),
-});
-*/
+let interval_time: number = 1 * 60 * 1000;
+let last_price:number=0;
 let price_when_bought : number=2000
 let buy_amount:number=50
 let tolerance:number=10
+let loopId: NodeJS.Timeout | null = null;
 
 
+export function setBoughtPrice(){
+  if(last_price>0)price_when_bought=last_price;
+}
+export function setAmount(amount:number){
+  if(amount>0)buy_amount=amount;
+  else alert("amount is not enough");
+}
+export function setTolerance(_tolerance:number){
+  if(_tolerance>0)tolerance=_tolerance;
+  else alert("tolerance is not enough");
+}
+export function setIntervalTime(_interval:number){
+  if(_interval>=1 * 60 * 1000)interval_time=_interval;
+}
 ///==========core functions==================
 async function buy(amount: number) {
   const chain = process.env.ACTIVE_CHAIN ?? "tenderly"; // choose chain dynamically
@@ -59,7 +59,17 @@ function insufficient_balance() {
 }
 
 
+///================STOP BOT=================
 
+export function stopAgent() {
+  if (loopId) {
+    clearInterval(loopId);
+    loopId = null;
+    console.log("Agent loop stopped.");
+  } else {
+    console.log("Agent loop is not running.");
+  }
+}
 
 
 ///================LOOP BOT=================
@@ -72,9 +82,10 @@ async function make_decision(): Promise<void> {
       return;
     }
     const price = await fetch_price();
-    const market_state = await calculate_market_state();
+    last_price=price;
+    const{market_state: market_state, confidence:confidence}= await calculate_market_state();
     const {hold_position,balanceEth} = await hasWeth();
-
+    if(!hold_position)price_when_bought=0;
     const params = build_params(
       wallet_balance,
       buy_amount,
@@ -82,9 +93,9 @@ async function make_decision(): Promise<void> {
       price_when_bought,
       tolerance,
       market_state,
+      confidence,
       hold_position
     );
-
     const result = await finalAI.invoke(params);
 
     console.log(
@@ -117,6 +128,7 @@ async function make_decision(): Promise<void> {
     unknown_error();
   }
 }
-// loop
+
 make_decision();
-setInterval(make_decision, interval_time);
+loopId = setInterval(make_decision, interval_time);
+

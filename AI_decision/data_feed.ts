@@ -37,6 +37,7 @@ export function build_params(
   price_when_bought: number,
   tolerance:number,
   market_state: string,
+  confidence:number,
   hold_position: boolean
 ): { agent: AgentParams } {
   return {
@@ -86,21 +87,41 @@ export async function calculate_market_state(
   symbol: string = "ETHUSDT",
   interval: string = "1h",
   limit: number = 100
-): Promise<string> {
+): Promise<{ market_state: string; confidence: number }> {
   const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
   const res = await fetch(url);
   const data: any[] = await res.json();
 
-  const prices = data.map((candle) => parseFloat(candle[4]));
-    if (prices.length < 2) return "neutral";
+  const closes = data.map((candle) => parseFloat(candle[4])).filter(p => p > 0);
+  if (closes.length < 5) return { market_state: "neutral", confidence: 0 };
 
-  const first = prices[0]!;
-  const last = prices[prices.length - 1]!;
+  // Simple moving average smoothing
+  const sma = closes.map((_, i, arr) => {
+    const slice = arr.slice(Math.max(0, i - 20), i + 1);
+    return slice.reduce((a, b) => a + b, 0) / slice.length;
+  });
 
-  if (last > first) return "bullish";
-  if (last < first) return "bearish";
-  return "neutral";
+  // Linear regression slope
+  const n = sma.length;
+  const x = Array.from({ length: n }, (_, i) => i);
+  const xMean = x.reduce((a, b) => a + b, 0) / n;
+  const yMean = sma.reduce((a, b) => a + b, 0) / n;
+  const slope =
+    x.reduce((sum, xi, i) => sum + (xi - xMean) * (sma[i] - yMean), 0) /
+    x.reduce((sum, xi) => sum + (xi - xMean) ** 2, 0);
 
+  // Volatility
+  const mean = yMean;
+  const variance = sma.reduce((sum, p) => sum + (p - mean) ** 2, 0) / n;
+  const volatility = Math.sqrt(variance);
+
+  let market_state = "neutral";
+  if (slope > 0.0 && Math.abs(slope) > volatility * 0.001) market_state = "bullish";
+  else if (slope < 0.0 && Math.abs(slope) > volatility * 0.001) market_state = "bearish";
+
+  const confidence = Math.min(1, Math.abs(slope) / (volatility + 1e-8));
+
+  return { market_state, confidence };
 }
 
 // === Wallet Balance ===

@@ -7,8 +7,9 @@ import {
 } from './abi_s.js';
 import { encodeFunctionData, type Abi, parseEther, parseUnits } from 'viem';
 import { get_wallet_balance } from '../AI_decision/data_feed.js';
+import { setBoughtPrice } from '../AI_decision/AI_decision_maker.js';
 import { approve } from './approve.js'; 
-
+import { publicActions } from 'viem';
 function getDeadline(): bigint {
   return BigInt(Math.floor(Date.now() / 1000) + 60 * 10);
 }
@@ -24,7 +25,6 @@ export async function buy(chain: string, amount: number) {
 
   // approve USDC before swap
   await approve(chain, cfg.tokens.USDC as `0x${string}`, amountIn);
-
   if (chain === 'ethereum' || chain === 'tenderly') {
     const data = encodeFunctionData({
       abi: swapUsdcToWethUniswapV3 as Abi,
@@ -41,12 +41,15 @@ export async function buy(chain: string, amount: number) {
       }],
     });
 
-    return client.sendTransaction({
+    const tx = await client.sendTransaction({
       account: client.account!,
       chain: client.chain,
       to: cfg.router as `0x${string}`,
       data,
     });
+    const receipt = await publicActions(client).waitForTransactionReceipt({ hash: tx });
+    if (receipt) setBoughtPrice();
+    return receipt;
   }
 
   if (chain === 'cronos') {
@@ -62,12 +65,16 @@ export async function buy(chain: string, amount: number) {
       ],
     });
 
-    return client.sendTransaction({
+    const tx = await client.sendTransaction({
       account: client.account!,
       chain: client.chain,
       to: cfg.router as `0x${string}`,
       data,
     });
+    const receipt = await publicActions(client).waitForTransactionReceipt({ hash: tx });
+    if (receipt) setBoughtPrice();
+    return receipt;
+
   }
 
   throw new Error(`Unsupported chain for buy: ${chain}`);

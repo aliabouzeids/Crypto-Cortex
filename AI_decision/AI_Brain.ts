@@ -9,6 +9,7 @@ const AgentSchema = z.object({
   price_when_bought: z.number(),
   tolerance:z.number(),
   market_state: z.string(),
+  confidence:z.number(),
   hold_position: z.boolean(),
   final_decision: z.string(),
 });
@@ -50,7 +51,7 @@ function decideGoal(state: State): string {
       return "hold"
     }
   }
-  if(agent.market_state=="bullish")return "buy";//buy at first
+  if(agent.market_state=="bullish"&&agent.confidence>0.8)return "buy";//buy at first
   else return "hold"//dont buy when the market is bearish
 }
 
@@ -106,16 +107,3 @@ graph.addConditionalEdges("goal" as any, decideGoal as any, {
 const finalAI:any= graph.compile();
 export default finalAI;
 
-// Example usage:
-// const params: State = {
-//   agent: {
-//     wallet_balance: 5,
-//     prices: [100, 101],
-//     price_when_bought: 101,
-//     market_state: "bullish",
-//     hold_position: true,
-//     final_decision: "",
-//   },
-// };
-// const result = await finalAI.invoke(params);
-// console.log(result.agent.final_decision); // "hold"
