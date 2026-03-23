@@ -1,0 +1,6 @@
+{
+    "apis":{
+        "local":"http://localhost:4000",
+        "public":"coming_soon"
+    }
+}

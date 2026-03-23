@@ -1,21 +1,7 @@
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 import type { Abi,Address} from "viem";
-/** 
 
--agent schema params::
-const AgentSchema = z.object({
-  wallet_balance: z.number(),
-  expected_future_market_price:z.number(),
-  buy_amount:z.number(),
-  last_price: z.number(),
-  price_when_bought: z.number(),
-  tolerance:z.number(),
-  market_state: z.string(),
-  hold_position: z.boolean(),
-  final_decision: z.string(),
-});
-*/
 
 
 // === Agent State Types ===
@@ -62,7 +48,6 @@ export async function fetch_price(): Promise<number> {
   );
   const data: any[] = await res.json();
 
-  // Grab the last candle in the array
   const lastCandle = data[data.length - 1];
   const lastPrice:number = parseFloat(lastCandle[4]); // close price
 
@@ -157,7 +142,6 @@ export async function get_wallet_balance(): Promise<number | null> {
 
 
 
-// WETH contract address on Ethereum mainnet
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
 const s_client = createPublicClient({

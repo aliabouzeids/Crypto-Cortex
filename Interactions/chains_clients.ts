@@ -1,8 +1,25 @@
-
-
 import 'dotenv/config';
 import { createWalletClient, http, type WalletClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
+import { defineChain, createPublicClient } from "viem";
+
+const tenderlyFork = defineChain({
+  id: 9991,
+  name: "alii",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: {
+    default: {
+      http: ["https://virtual.mainnet.eu.rpc.tenderly.co/42e3266f-5170-461f-8263-abf0040f62ed"], 
+    },
+  },
+});
+
+
+const client = createPublicClient({
+  chain: tenderlyFork,
+  transport: http(),
+});
+
 
 type ChainConfig = {
   key: string;
@@ -37,8 +54,8 @@ export const chainConfigs: Record<string, ChainConfig> = {
 
   tenderly: {
     key: 'tenderly',
-    id: 1,
-    name: 'mainnet-ali-node',
+    id: 9991,
+    name: 'alii',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrl: process.env.TENDERLY_MAINNET_FORK_RPC_URL ?? '',
     router: process.env.TENDERLY_ROUTER ?? '0xE592427A0AEce92De3Edee1F18E0157C05861564',
@@ -65,33 +82,29 @@ export const chainConfigs: Record<string, ChainConfig> = {
 
 
 
-export function makeClient(chain: ChainConfig): WalletClient {
-  const rpc = chain.rpcUrl;
-  if (!rpc) {
-    throw new Error(`RPC URL not configured for chain ${chain.key}. Set the appropriate env var.`);
-  }
-
+export function makeClient(cfg: ChainConfig): WalletClient {
   const pk = process.env.PRIVATE_KEY;
-  if (!pk) {
-    throw new Error('Missing PRIVATE_KEY in environment. Set PRIVATE_KEY=0x...');
+  if (!pk) throw new Error("Missing PRIVATE_KEY in environment.");
+  const account = privateKeyToAccount(pk as `0x${string}`);
+
+  let chainObj;
+  if (cfg.id === 9991) {
+    chainObj = tenderlyFork;
+  } else {
+    chainObj = defineChain({
+      id: cfg.id,
+      name: cfg.name,
+      nativeCurrency: cfg.nativeCurrency,
+      rpcUrls: { default: { http: [cfg.rpcUrl] } },
+    });
   }
 
-  const account = privateKeyToAccount("0xed85058fad95d4b48d55f0b44e29e1120cc7b340d2805f74710e35252d9d5d5c");
-
-  const client = createWalletClient({
-    chain: {
-      id: chain.id,
-      name: chain.name,
-      nativeCurrency: chain.nativeCurrency,
-      rpcUrls: { default: { http: [rpc] } },
-    },
-    transport: http(rpc),
+  return createWalletClient({
+    chain: chainObj,
+    transport: http(chainObj.rpcUrls.default.http[0]),
     account,
   });
-
-  return client;
 }
-
 
 export { ChainConfig };
 export default {

@@ -1,3 +1,41 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+body {
+  background-color: #000000;
+  color :#ffffff;
+  margin: 0;
+}
+
+.button {
+  display: block;
+  margin: 10px auto;
+  padding: 12px 24px;
+  border: 2px solid white;
+  border-radius: 9999px;
+  background: black;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.button-on {
+  border-color: rgb(0, 255, 0);
+  color :rgb(0, 255, 0);
+}
+.button-off {
+  border-color: red;
+  color :red;
+}
+
+input[type="range"] {
+  width: 300px;
+  margin: 10px;
+  color:rgb(0, 255, 0);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  background: #4ffe6c;
+  border-radius: 50%;
+}
