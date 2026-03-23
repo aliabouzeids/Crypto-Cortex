@@ -6,7 +6,7 @@
   "scripts": {
     "decision": "node ./AI_decision/AI_decision.js",
     "dev": "next dev ./UI",
-    "build": "next build",
+    "build": "next build  ./UI",
     "start": "next start ./UI"
   },
   "dependencies": {
